@@ -1,0 +1,9 @@
+*
+
+i32, i64 are converted to u32, u64 and variable length encoded
+
+{
+    can_data: "100"
+}
+
+convert this to i32 which occupies only 1 byte insted of 3bytes (or more incase of unicode)

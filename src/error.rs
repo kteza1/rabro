@@ -8,6 +8,7 @@ pub enum Error {
     Avro,
     Io(io::Error),
     InvalidBool,
+    IntegerOverflow,
 }
 
 impl From<io::Error> for Error {
