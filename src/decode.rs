@@ -1,5 +1,6 @@
-use std::io::{self, Read};
+use std::io::Read;
 use error::{Error, Result};
+use byteorder::{BigEndian, ReadBytesExt};
 
 pub fn decode_zig_zag(num: u64) -> i64 {
     if num & 1 == 1 {
@@ -55,6 +56,20 @@ impl Decodable for i32 {
 impl Decodable for i64 {
     fn decode<R: Read>(reader: &mut R) -> Result<Self> {
         let decoded = decode_zig_zag(try!(decode_var_len_u64(reader)));
+        Ok(decoded)
+    }
+}
+
+impl Decodable for f32 {
+    fn decode<R: Read>(reader: &mut R) -> Result<Self> {
+        let decoded = try!(reader.read_f32::<BigEndian>());
+        Ok(decoded)
+    }
+}
+
+impl Decodable for f64 {
+    fn decode<R: Read>(reader: &mut R) -> Result<Self> {
+        let decoded = try!(reader.read_f64::<BigEndian>());
         Ok(decoded)
     }
 }
@@ -119,6 +134,30 @@ mod test {
             let mut e: Vec<u8> = Vec::new();
             v.encode(&mut e);
             let d = i64::decode(&mut &e[..]).unwrap();
+            assert_eq!(v, d);
+        }
+    }
+
+    #[test]
+    fn encode_decode_f32() {
+        let to_encode = vec![100.1, -100.2, 1000.3, -1000.4];
+
+        for v in to_encode {
+            let mut e: Vec<u8> = Vec::new();
+            v.encode(&mut e);
+            let d = f32::decode(&mut &e[..]).unwrap();
+            assert_eq!(v, d);
+        }
+    }
+
+    #[test]
+    fn encode_decode_f64() {
+        let to_encode = vec![100.1, -100.2, 1000.3, -1000.4];
+
+        for v in to_encode {
+            let mut e: Vec<u8> = Vec::new();
+            v.encode(&mut e);
+            let d = f64::decode(&mut &e[..]).unwrap();
             assert_eq!(v, d);
         }
     }

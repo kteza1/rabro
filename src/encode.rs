@@ -1,5 +1,5 @@
-use std::io::{self, Write};
-use error::{Error, Result};
+use std::io::Write;
+use error::Result;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
@@ -52,6 +52,21 @@ impl Encodable for i64 {
     fn encode<W: Write>(self, writer: &mut W) -> Result<()> {
         let zigzag = encode_zig_zag(self);
         try!(encode_var_len_u64(writer, zigzag));
+        Ok(())
+    }
+}
+
+impl Encodable for f32 {
+    fn encode<W: Write>(self, writer: &mut W) -> Result<()> {
+        try!(writer.write_f32::<BigEndian>(self));
+        Ok(())
+    }
+}
+
+
+impl Encodable for f64 {
+    fn encode<W: Write>(self, writer: &mut W) -> Result<()> {
+        try!(writer.write_f64::<BigEndian>(self));
         Ok(())
     }
 }
