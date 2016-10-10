@@ -5,3 +5,4 @@ authors = ["kteza1 <k.teza1@gmail.com>"]
 
 [dependencies]
 byteorder = "0.5"
+serde_json = "0.8"
