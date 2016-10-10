@@ -2,6 +2,8 @@ use encode::Encodable;
 use decode::Decodable;
 
 use std::io::{Write, Read};
+use std::iter::repeat;
+
 use error::{Error, Result};
 
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
@@ -66,6 +68,15 @@ impl Encodable for f32 {
 impl Encodable for f64 {
     fn encode<W: Write>(self, writer: &mut W) -> Result<()> {
         try!(writer.write_f64::<BigEndian>(self));
+        Ok(())
+    }
+}
+
+impl Encodable for Vec<u8> {
+    fn encode<W: Write>(self, writer: &mut W) -> Result<()> {
+        let zigzag = encode_zig_zag(self.len() as i64);
+        try!(encode_var_len_u64(writer, zigzag));
+        try!(writer.write_all(&self[..]));
         Ok(())
     }
 }
@@ -135,6 +146,15 @@ impl Decodable for f32 {
 impl Decodable for f64 {
     fn decode<R: Read>(reader: &mut R) -> Result<Self> {
         let decoded = try!(reader.read_f64::<BigEndian>());
+        Ok(decoded)
+    }
+}
+
+impl Decodable for Vec<u8> {
+    fn decode<R: Read>(reader: &mut R) -> Result<Self> {
+        let len = decode_zig_zag(try!(decode_var_len_u64(reader)));
+        let mut decoded: Vec<u8> = repeat(0).take(len as usize).collect();
+        try!(reader.read_exact(&mut decoded));
         Ok(decoded)
     }
 }
@@ -225,5 +245,16 @@ mod test {
             let d = f64::decode(&mut &e[..]).unwrap();
             assert_eq!(v, d);
         }
+    }
+
+    #[test]
+    fn encode_decode_byte_array() {
+        let input: Vec<u8> = vec![1, 2, 3, 4];
+
+        let mut e: Vec<u8> = Vec::new();
+        input.clone().encode(&mut e);
+
+        let d = Vec::<u8>::decode(&mut &e[..]).unwrap();
+        assert_eq!(input, d);
     }
 }
