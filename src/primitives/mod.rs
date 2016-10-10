@@ -81,6 +81,16 @@ impl Encodable for Vec<u8> {
     }
 }
 
+impl Encodable for String {
+    fn encode<W: Write>(self, writer: &mut W) -> Result<()> {
+        let bytes = self.into_bytes();
+        let zigzag = encode_zig_zag(bytes.len() as i64);
+        try!(encode_var_len_u64(writer, zigzag));
+        try!(writer.write_all(&bytes[..]));
+        Ok(())
+    }
+}
+
 
 pub fn decode_zig_zag(num: u64) -> i64 {
     if num & 1 == 1 {
@@ -156,6 +166,15 @@ impl Decodable for Vec<u8> {
         let mut decoded: Vec<u8> = repeat(0).take(len as usize).collect();
         try!(reader.read_exact(&mut decoded));
         Ok(decoded)
+    }
+}
+
+impl Decodable for String {
+    fn decode<R: Read>(reader: &mut R) -> Result<Self> {
+        let len = decode_zig_zag(try!(decode_var_len_u64(reader)));
+        let mut decoded: Vec<u8> = repeat(0).take(len as usize).collect();
+        try!(reader.read_exact(&mut decoded));
+        Ok(try!(String::from_utf8(decoded)))
     }
 }
 
@@ -255,6 +274,17 @@ mod test {
         input.clone().encode(&mut e);
 
         let d = Vec::<u8>::decode(&mut &e[..]).unwrap();
+        assert_eq!(input, d);
+    }
+
+    #[test]
+    fn encode_decode_string() {
+        let input = "Hello World".to_string();
+
+        let mut e: Vec<u8> = Vec::new();
+        input.clone().encode(&mut e);
+
+        let d = String::decode(&mut &e[..]).unwrap();
         assert_eq!(input, d);
     }
 }
