@@ -6,3 +6,6 @@ mod encode;
 mod decode;
 mod primitives;
 mod complex;
+mod schema;
+
+pub use schema::Schema;
